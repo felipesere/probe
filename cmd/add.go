@@ -43,8 +43,13 @@ var (
 				if err != nil {
 					return err
 				}
-
 				spew.Dump(getIssue)
+
+				pr, err := gh.GetPr(*client, submatch[1], submatch[2], 16476)
+				if err != nil {
+					return err
+				}
+				spew.Dump(pr)
 			}
 
 			return nil
