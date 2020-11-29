@@ -7,7 +7,15 @@ import (
 	"time"
 )
 
-type Issue struct {
+type GithubKind string
+
+const (
+	PullRequestKind GithubKind = "PR"
+	IssueKind       GithubKind = "Issue"
+)
+
+type GithubData struct {
+	Kind        GithubKind
 	Owner       string
 	Repository  string
 	Number      int32
@@ -19,16 +27,13 @@ type Issue struct {
 	LastAction  string
 }
 
-type PR struct {
-	Owner       string
-	Repository  string
-	Number      int32
-	Link        string
-	Title       string
-	Status      string
-	Id          string
-	LastUpdated time.Time
-	LastAction  string
+type ItemQuery struct {
+	Id            githubv4.ID
+	Title         string
+	State         githubv4.PullRequestState
+	LastEditedAt  githubv4.DateTime
+	Comments      CommentsQuery     `graphql:"comments(last: 1)"`
+	TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
 }
 
 type CommentsQuery struct {
@@ -49,17 +54,10 @@ type TimelineItem struct {
 	Typename string `graphql:"__typename"`
 }
 
-func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
+func GetPr(client githubv4.Client, owner, name string, nr int32) (GithubData, error) {
 	var query struct {
 		Repository struct {
-			PullRequest struct {
-				Id            githubv4.ID
-				Title         string
-				State         githubv4.PullRequestState
-				LastEditedAt  githubv4.DateTime
-				Comments      CommentsQuery     `graphql:"comments(last: 1)"`
-				TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
-			} `graphql:"pullRequest(number: $nr)"`
+			PullRequest ItemQuery `graphql:"pullRequest(number: $nr)"`
 		} `graphql:"repository(owner: $owner, name: $name)"`
 	}
 
@@ -70,17 +68,11 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
 			"nr":    githubv4.Int(nr),
 		})
 
-	pr := PR{}
 	if err != nil {
-		return pr, err
+		return GithubData{}, err
 	}
-	pullRequest := query.Repository.PullRequest
-
-	pr.Status = fmt.Sprintf("%v", pullRequest.State)
-	pr.Id = fmt.Sprintf("%v", pullRequest.Id)
-	pr.LastUpdated = pullRequest.TimelineItems.UpdatedAt
-	pr.LastAction = pullRequest.TimelineItems.Nodes[0].Typename
-	pr.Title = pullRequest.Title
+	pr := from(query.Repository.PullRequest)
+	pr.Kind = IssueKind
 	pr.Owner = owner
 	pr.Repository = name
 	pr.Number = nr
@@ -88,16 +80,10 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
 	return pr, nil
 }
 
-func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, error) {
+func GetIssue(client githubv4.Client, owner, name string, nr int32) (GithubData, error) {
 	var query struct {
 		Repository struct {
-			Issue struct {
-				Id            githubv4.ID
-				Title         string
-				State         githubv4.IssueState
-				Comments      CommentsQuery     `graphql:"comments(last: 1)"`
-				TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
-			} `graphql:"issue(number: $nr)"`
+			Issue ItemQuery `graphql:"issue(number: $nr)"`
 		} `graphql:"repository(owner: $owner, name: $name)"`
 	}
 
@@ -108,20 +94,28 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, erro
 			"nr":    githubv4.Int(nr),
 		})
 
-	issue := Issue{}
 	if err != nil {
-		return issue, err
+		return GithubData{}, err
 	}
 
 	i := query.Repository.Issue
-	issue.Status = fmt.Sprintf("%v", i.State)
-	issue.Id = fmt.Sprintf("%v", i.Id)
-	issue.LastUpdated = i.TimelineItems.UpdatedAt
-	issue.LastAction = i.TimelineItems.Nodes[0].Typename
-	issue.Title = i.Title
+
+	issue := from(i)
+	issue.Kind = IssueKind
 	issue.Owner = owner
 	issue.Repository = name
 	issue.Number = nr
 
 	return issue, nil
+}
+
+func from(i ItemQuery) GithubData {
+	return GithubData{
+		Kind:        IssueKind,
+		Status:      fmt.Sprintf("%v", i.State),
+		Id:          fmt.Sprintf("%v", i.Id),
+		LastUpdated: i.TimelineItems.UpdatedAt,
+		LastAction:  i.TimelineItems.Nodes[0].Typename,
+		Title:       i.Title,
+	}
 }

@@ -19,6 +19,7 @@ type Row struct {
 	LastAction  string
 	LastChanged string
 	Link        string
+	Kind        string
 }
 
 type Inner struct {
@@ -42,7 +43,7 @@ func NewStorage(path string) (*Storage, error) {
 	return &s, nil
 }
 
-func (s *Storage) AddIssue(issue Issue) error {
+func (s *Storage) StoreData(issue GithubData) error {
 	s.withId(func(id int) {
 		s.inner.Content[id] = Row{
 			GithubID:    issue.Id,
@@ -53,6 +54,7 @@ func (s *Storage) AddIssue(issue Issue) error {
 			LastAction:  issue.LastAction,
 			LastChanged: issue.LastUpdated.Format(time.RFC3339),
 			Link:        issue.Link,
+			Kind:        string(issue.Kind),
 		}
 	})
 
@@ -63,23 +65,6 @@ func (s *Storage) withId(f func(id int)) {
 	nextId := s.inner.Counter + 1
 	f(nextId)
 	s.inner.Counter = nextId
-}
-
-func (s *Storage) AddPullRequest(pullRequest PR) error {
-	s.withId(func(id int) {
-		s.inner.Content[id] = Row{
-			GithubID:    pullRequest.Id,
-			Owner:       pullRequest.Owner,
-			Repository:  pullRequest.Repository,
-			Title:       pullRequest.Title,
-			Status:      pullRequest.Status,
-			LastAction:  pullRequest.LastAction,
-			LastChanged: pullRequest.LastUpdated.Format(time.RFC3339),
-			Link:        pullRequest.Link,
-		}
-	})
-
-	return nil
 }
 
 func (s *Storage) Load() [][]string {

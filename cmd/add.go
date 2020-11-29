@@ -24,33 +24,29 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetUrl := args[0]
 
+			var result lib.GithubData
 			if isIssue {
 				t, err := extract(issues, targetUrl)
 				if err != nil {
 					return err
 				}
-				issue, err := lib.GetIssue(githubClient, t.owner, t.name, t.nr)
+				result, err = lib.GetIssue(githubClient, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
-				issue.Link = targetUrl
-
-				db.AddIssue(issue)
 			} else {
 				t, err := extract(prs, targetUrl)
 				if err != nil {
 					return err
 				}
 
-				pr, err := lib.GetPr(githubClient, t.owner, t.name, t.nr)
-				if err != nil {
-					return err
-				}
-				pr.Link = targetUrl
-				db.AddPullRequest(pr)
+				result, err = lib.GetPr(githubClient, t.owner, t.name, t.nr)
 			}
 
-			return nil
+			result.Link = targetUrl
+			err := db.StoreData(result)
+
+			return err
 		},
 	}
 )
