@@ -1,20 +1,16 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/felipesere/probe/gh"
-	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
-	"os"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 const issuePattern = "https://github.com/([^/]+)/([^/]+)/issues/(.+)"
+const prPattern = "https://github.com/([^/]+)/([^/]+)/pull/(.+)"
 
 var (
 	issue bool
@@ -24,28 +20,30 @@ var (
 		Args: cobra.ExactArgs(1),
 		Short: "adds a new MR based on the URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			issues := regexp.MustCompile(issuePattern)
+			targetUrl := args[0]
 
-			if issues.MatchString(args[0]) {
-				submatch := issues.FindStringSubmatch(args[0])
-				fmt.Println(strings.Join(submatch[1:], ", "))
+			if issue {
+				issues := regexp.MustCompile(issuePattern)
 
-
-				src := oauth2.StaticTokenSource(
-					&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-				)
-				httpClient := oauth2.NewClient(context.Background(), src)
-
-				client := githubv4.NewClient(httpClient)
-
-				nr, _ := strconv.ParseInt(submatch[3], 10, 63)
-				getIssue, err := gh.GetIssue(*client, submatch[1], submatch[2], int32(nr))
+				if !issues.MatchString(targetUrl) {
+					return fmt.Errorf("url did not match expected pattern: %s", targetUrl)
+				}
+				subMatch := issues.FindStringSubmatch(targetUrl)
+				nr, _ := strconv.ParseInt(subMatch[3], 10, 63)
+				getIssue, err := gh.GetIssue(*client, subMatch[1], subMatch[2], int32(nr))
 				if err != nil {
 					return err
 				}
 				spew.Dump(getIssue)
+			} else {
+				prs := regexp.MustCompile(prPattern)
 
-				pr, err := gh.GetPr(*client, submatch[1], submatch[2], 16476)
+				if !prs.MatchString(targetUrl) {
+					return fmt.Errorf("url did not match expected pattern: %s", targetUrl)
+				}
+				subMatch := prs.FindStringSubmatch(targetUrl)
+				nr, _ := strconv.ParseInt(subMatch[3], 10, 63)
+				pr, err := gh.GetPr(*client, subMatch[1], subMatch[2], int32(nr))
 				if err != nil {
 					return err
 				}
