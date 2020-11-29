@@ -6,10 +6,12 @@ import (
 	"github.com/dustin/go-humanize"
 	"io/ioutil"
 	"os"
+	"sort"
 	"time"
 )
 
 type Row struct {
+	GithubID    string
 	Owner       string
 	Repository  string
 	Title       string
@@ -19,63 +21,86 @@ type Row struct {
 	Link        string
 }
 
-type Storage struct {
-	path    string
-	content map[string]Row
+type Inner struct {
+	Counter int
+	Content map[int]Row
 }
 
-func NewStorage(path string) (Storage, error) {
+type Storage struct {
+	path  string
+	inner Inner
+}
+
+func NewStorage(path string) (*Storage, error) {
 	b, _ := ioutil.ReadFile(path)
 	s := Storage{path: path}
-	err := json.Unmarshal(b, &s.content)
+	err := json.Unmarshal(b, &s.inner)
 	if err != nil {
-		s.content = map[string]Row{}
+		s.inner.Content = map[int]Row{}
 	}
 
-	return s, nil
+	return &s, nil
 }
 
-func (s Storage) AddIssue(issue Issue) error {
-	s.content[issue.Id] = Row{
-		Owner:       issue.Owner,
-		Repository:  issue.Repository,
-		Title:       issue.Title,
-		Status:      issue.Status,
-		LastAction:  issue.LastAction,
-		LastChanged: issue.LastUpdated.Format(time.RFC3339),
-		Link:        "",
-	}
+func (s *Storage) AddIssue(issue Issue) error {
+	s.withId(func(id int) {
+		s.inner.Content[id] = Row{
+			GithubID:    issue.Id,
+			Owner:       issue.Owner,
+			Repository:  issue.Repository,
+			Title:       issue.Title,
+			Status:      issue.Status,
+			LastAction:  issue.LastAction,
+			LastChanged: issue.LastUpdated.Format(time.RFC3339),
+			Link:        issue.Link,
+		}
+	})
 
 	return nil
 }
 
-func (s Storage) AddPullRequest(pullRequest PR) error {
-	s.content[pullRequest.Id] = Row{
-		Owner:       pullRequest.Owner,
-		Repository:  pullRequest.Repository,
-		Title:       pullRequest.Title,
-		Status:      pullRequest.Status,
-		LastAction:  pullRequest.LastAction,
-		LastChanged: pullRequest.LastUpdated.Format(time.RFC3339),
-		Link:        "",
-	}
+func (s *Storage) withId(f func(id int)) {
+	nextId := s.inner.Counter + 1
+	f(nextId)
+	s.inner.Counter = nextId
+}
+
+func (s *Storage) AddPullRequest(pullRequest PR) error {
+	s.withId(func(id int) {
+		s.inner.Content[id] = Row{
+			GithubID:    pullRequest.Id,
+			Owner:       pullRequest.Owner,
+			Repository:  pullRequest.Repository,
+			Title:       pullRequest.Title,
+			Status:      pullRequest.Status,
+			LastAction:  pullRequest.LastAction,
+			LastChanged: pullRequest.LastUpdated.Format(time.RFC3339),
+			Link:        pullRequest.Link,
+		}
+	})
 
 	return nil
 }
 
-func (s Storage) Load() [][]string  {
+func (s *Storage) Load() [][]string {
 	file, _ := os.OpenFile(s.path, os.O_RDONLY, os.ModePerm)
 
-	err := json.NewDecoder(file).Decode(&s.content)
+	err := json.NewDecoder(file).Decode(&s.inner)
 	if err != nil {
 		panic(err.Error())
 	}
+	var keys []int
+	for key, _ := range s.inner.Content {
+		keys = append(keys, key)
+	}
+	sort.Ints(keys)
+
 	var data [][]string
-	var idx int
-	for _,  row := range s.content {
-		t, _ := time.Parse(time.RFC3339,row.LastChanged)
+	for _, k := range keys {
+		row := s.inner.Content[k]
+		t, _ := time.Parse(time.RFC3339, row.LastChanged)
 		data = append(data, []string{
-			fmt.Sprintf("%d", idx),
+			fmt.Sprintf("%d", k),
 			row.Owner,
 			row.Repository,
 			row.Title,
@@ -84,13 +109,12 @@ func (s Storage) Load() [][]string  {
 			humanize.Time(t),
 			row.Link,
 		})
-		idx++;
 	}
 
 	return data
 }
 
-func (s Storage) Flush()  {
-	b, _ := json.Marshal(s.content)
+func (s Storage) Flush() {
+	b, _ := json.MarshalIndent(s.inner, "", "  ")
 	ioutil.WriteFile(s.path, b, os.ModePerm)
 }

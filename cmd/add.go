@@ -33,6 +33,7 @@ var (
 				if err != nil {
 					return err
 				}
+				issue.Link = targetUrl
 
 				db.AddIssue(issue)
 			} else {
@@ -45,6 +46,7 @@ var (
 				if err != nil {
 					return err
 				}
+				pr.Link = targetUrl
 				db.AddPullRequest(pr)
 			}
 

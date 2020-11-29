@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	paths := []string { "$HOME", "."}
+	paths := []string{"$HOME", "."}
 	viper.SetConfigName(".probe")
 	viper.SetConfigType("yml")
 	for _, path := range paths {

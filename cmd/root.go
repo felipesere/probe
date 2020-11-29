@@ -9,7 +9,7 @@ import (
 
 var (
 	githubClient githubv4.Client
-	db           lib.Storage
+	db           *lib.Storage
 
 	rootCmd = &cobra.Command{
 		Use:   "init",
@@ -20,7 +20,7 @@ and see when changes occur.`,
 	}
 )
 
-func Execute(client githubv4.Client, storage lib.Storage) {
+func Execute(client githubv4.Client, storage *lib.Storage) {
 	githubClient = client
 	db = storage
 	if err := rootCmd.Execute(); err != nil {
