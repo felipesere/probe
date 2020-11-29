@@ -1,4 +1,4 @@
-package gh
+package lib
 
 import (
 	"context"
@@ -84,7 +84,7 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, erro
 				Id            githubv4.ID
 				Title         string
 				State         githubv4.IssueState
-				Comments      CommentsQuery `graphql:"comments(last: 1)"`
+				Comments      CommentsQuery     `graphql:"comments(last: 1)"`
 				TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
 			} `graphql:"issue(number: $nr)"`
 		} `graphql:"repository(owner: $owner, name: $name)"`

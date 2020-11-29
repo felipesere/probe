@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dustin/go-humanize"
-	"github.com/felipesere/probe/gh"
-	"github.com/olekukonko/tablewriter"
+	"github.com/felipesere/probe/lib"
 	"github.com/spf13/cobra"
-	"os"
 	"regexp"
 	"strconv"
 )
@@ -33,25 +31,12 @@ var (
 				if err != nil {
 					return err
 				}
-				getIssue, err := gh.GetIssue(client, t.owner, t.name, t.nr)
+				getIssue, err := lib.GetIssue(client, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
 
-				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"idx", "Repository", "Name", "Title", "Status", "Last action", "Last changed", "Link"})
-				table.SetAutoWrapText(false)
-				table.SetAutoFormatHeaders(true)
-				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-				table.SetAlignment(tablewriter.ALIGN_LEFT)
-				table.SetCenterSeparator("")
-				table.SetColumnSeparator("")
-				table.SetRowSeparator("")
-				table.SetHeaderLine(false)
-				table.SetBorder(false)
-				table.SetTablePadding("\t") // pad with tabs
-				table.SetNoWhiteSpace(true)
-				table.Append([]string{
+				data := []string{
 					"0",
 					t.owner,
 					t.name,
@@ -60,15 +45,16 @@ var (
 					getIssue.LastAction,
 					humanize.Time(getIssue.LastUpdated),
 					targetUrl,
-				})
-				table.Render()
+				}
+
+				lib.Print([][]string{data})
 			} else {
 				t, err := extract(prs, targetUrl)
 				if err != nil {
 					return err
 				}
 
-				pr, err := gh.GetPr(client, t.owner, t.name, t.nr)
+				pr, err := lib.GetPr(client, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
