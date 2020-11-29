@@ -31,7 +31,7 @@ var (
 				if err != nil {
 					return err
 				}
-				getIssue, err := lib.GetIssue(client, t.owner, t.name, t.nr)
+				getIssue, err := lib.GetIssue(githubClient, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
@@ -54,7 +54,7 @@ var (
 					return err
 				}
 
-				pr, err := lib.GetPr(client, t.owner, t.name, t.nr)
+				pr, err := lib.GetPr(githubClient, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
