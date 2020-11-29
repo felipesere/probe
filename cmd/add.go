@@ -3,8 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/dustin/go-humanize"
 	"github.com/felipesere/probe/gh"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"os"
 	"regexp"
 	"strconv"
 )
@@ -13,7 +16,7 @@ const issuePattern = "https://github.com/([^/]+)/([^/]+)/issues/(.+)"
 const prPattern = "https://github.com/([^/]+)/([^/]+)/pull/(.+)"
 
 var (
-	issue bool
+	isIssue bool
 
 	issues = regexp.MustCompile(issuePattern)
 	prs    = regexp.MustCompile(prPattern)
@@ -25,7 +28,7 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetUrl := args[0]
 
-			if issue {
+			if isIssue {
 				t, err := extract(issues, targetUrl)
 				if err != nil {
 					return err
@@ -34,7 +37,31 @@ var (
 				if err != nil {
 					return err
 				}
-				spew.Dump(getIssue)
+
+				table := tablewriter.NewWriter(os.Stdout)
+				table.SetHeader([]string{"idx", "Repository", "Name", "Title", "Status", "Last action", "Last changed", "Link"})
+				table.SetAutoWrapText(false)
+				table.SetAutoFormatHeaders(true)
+				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+				table.SetAlignment(tablewriter.ALIGN_LEFT)
+				table.SetCenterSeparator("")
+				table.SetColumnSeparator("")
+				table.SetRowSeparator("")
+				table.SetHeaderLine(false)
+				table.SetBorder(false)
+				table.SetTablePadding("\t") // pad with tabs
+				table.SetNoWhiteSpace(true)
+				table.Append([]string{
+					"0",
+					t.owner,
+					t.name,
+					getIssue.Title,
+					getIssue.Status,
+					getIssue.LastAction,
+					humanize.Time(getIssue.LastUpdated),
+					targetUrl,
+				})
+				table.Render()
 			} else {
 				t, err := extract(prs, targetUrl)
 				if err != nil {
@@ -73,6 +100,6 @@ func extract(pattern *regexp.Regexp, url string) (Target, error) {
 }
 
 func init() {
-	addCmd.Flags().BoolVarP(&issue, "issue", "", false, "add an issue instead of an PR")
+	addCmd.Flags().BoolVarP(&isIssue, "issue", "", false, "add an issue instead of an PR")
 	rootCmd.AddCommand(addCmd)
 }

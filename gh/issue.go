@@ -8,17 +8,19 @@ import (
 )
 
 type Issue struct {
-	status      string
-	id          string
-	lastUpdated time.Time
-	lastAction  string
+	Title       string
+	Status      string
+	Id          string
+	LastUpdated time.Time
+	LastAction  string
 }
 
 type PR struct {
-	status      string
-	id          string
-	lastUpdated time.Time
-	lastAction  string
+	Title       string
+	Status      string
+	Id          string
+	LastUpdated time.Time
+	LastAction  string
 }
 
 type CommentsQuery struct {
@@ -44,6 +46,7 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
 		Repository struct {
 			PullRequest struct {
 				Id            githubv4.ID
+				Title         string
 				State         githubv4.PullRequestState
 				LastEditedAt  githubv4.DateTime
 				Comments      CommentsQuery     `graphql:"comments(last: 1)"`
@@ -63,10 +66,13 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
 	if err != nil {
 		return pr, err
 	}
-	pr.status = fmt.Sprintf("%v", query.Repository.PullRequest.State)
-	pr.id = fmt.Sprintf("%v", query.Repository.PullRequest.Id)
-	pr.lastUpdated = query.Repository.PullRequest.TimelineItems.UpdatedAt
-	pr.lastAction = query.Repository.PullRequest.TimelineItems.Nodes[0].Typename
+	pullRequest := query.Repository.PullRequest
+
+	pr.Status = fmt.Sprintf("%v", pullRequest.State)
+	pr.Id = fmt.Sprintf("%v", pullRequest.Id)
+	pr.LastUpdated = pullRequest.TimelineItems.UpdatedAt
+	pr.LastAction = pullRequest.TimelineItems.Nodes[0].Typename
+	pr.Title = pullRequest.Title
 
 	return pr, nil
 }
@@ -76,6 +82,7 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, erro
 		Repository struct {
 			Issue struct {
 				Id            githubv4.ID
+				Title         string
 				State         githubv4.IssueState
 				Comments      CommentsQuery `graphql:"comments(last: 1)"`
 				TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
@@ -95,10 +102,12 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, erro
 		return issue, err
 	}
 
-	issue.status = fmt.Sprintf("%v", query.Repository.Issue.State)
-	issue.id = fmt.Sprintf("%v", query.Repository.Issue.Id)
-	issue.lastUpdated = query.Repository.Issue.TimelineItems.UpdatedAt
-	issue.lastAction = query.Repository.Issue.TimelineItems.Nodes[0].Typename
+	i := query.Repository.Issue
+	issue.Status = fmt.Sprintf("%v", i.State)
+	issue.Id = fmt.Sprintf("%v", i.Id)
+	issue.LastUpdated = i.TimelineItems.UpdatedAt
+	issue.LastAction = i.TimelineItems.Nodes[0].Typename
+	issue.Title = i.Title
 
 	return issue, nil
 }
