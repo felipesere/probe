@@ -43,6 +43,10 @@ func NewStorage(path string) (*Storage, error) {
 	return &s, nil
 }
 
+func (s *Storage) Delete(id int)  {
+	delete(s.inner.Content, id)
+}
+
 func (s *Storage) StoreData(issue GithubData) error {
 	s.withId(func(id int) {
 		s.inner.Content[id] = Row{
