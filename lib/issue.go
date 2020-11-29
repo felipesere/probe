@@ -8,6 +8,10 @@ import (
 )
 
 type Issue struct {
+	Owner       string
+	Repository  string
+	Number      int32
+	Link        string
 	Title       string
 	Status      string
 	Id          string
@@ -16,6 +20,10 @@ type Issue struct {
 }
 
 type PR struct {
+	Owner       string
+	Repository  string
+	Number      int32
+	Link        string
 	Title       string
 	Status      string
 	Id          string
@@ -73,6 +81,9 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (PR, error) {
 	pr.LastUpdated = pullRequest.TimelineItems.UpdatedAt
 	pr.LastAction = pullRequest.TimelineItems.Nodes[0].Typename
 	pr.Title = pullRequest.Title
+	pr.Owner = owner
+	pr.Repository = name
+	pr.Number = nr
 
 	return pr, nil
 }
@@ -108,6 +119,9 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (Issue, erro
 	issue.LastUpdated = i.TimelineItems.UpdatedAt
 	issue.LastAction = i.TimelineItems.Nodes[0].Typename
 	issue.Title = i.Title
+	issue.Owner = owner
+	issue.Repository = name
+	issue.Number = nr
 
 	return issue, nil
 }

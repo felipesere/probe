@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/felipesere/probe/cmd"
+	"github.com/felipesere/probe/lib"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -31,5 +32,12 @@ func main() {
 	client := *githubv4.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: viper.GetString("github_token")},
 	)))
-	cmd.Execute(client)
+
+	db, err := lib.NewStorage(viper.GetString("database_path"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not load DB: %s\n", err.Error())
+		os.Exit(1)
+	}
+	cmd.Execute(client, db)
+	db.Flush()
 }

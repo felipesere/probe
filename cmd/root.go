@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/felipesere/probe/lib"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"os"
@@ -8,6 +9,8 @@ import (
 
 var (
 	githubClient githubv4.Client
+	db           lib.Storage
+
 	rootCmd = &cobra.Command{
 		Use:   "init",
 		Short: "tracks PRs and issues on GitHub",
@@ -17,8 +20,9 @@ and see when changes occur.`,
 	}
 )
 
-func Execute(client githubv4.Client)  {
+func Execute(client githubv4.Client, storage lib.Storage) {
 	githubClient = client
+	db = storage
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -7,7 +7,7 @@ import (
 
 func Print(data [][]string)  {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"idx", "Repository", "Name", "Title", "Status", "Last action", "Last changed", "Link"})
+	table.SetHeader([]string{"idx", "Owner", "Repository", "Title", "Status", "Last action", "Last changed", "Link"})
 	table.SetAutoWrapText(false)
 	table.SetAutoFormatHeaders(true)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)

@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/dustin/go-humanize"
 	"github.com/felipesere/probe/lib"
 	"github.com/spf13/cobra"
 	"regexp"
@@ -31,23 +29,12 @@ var (
 				if err != nil {
 					return err
 				}
-				getIssue, err := lib.GetIssue(githubClient, t.owner, t.name, t.nr)
+				issue, err := lib.GetIssue(githubClient, t.owner, t.name, t.nr)
 				if err != nil {
 					return err
 				}
 
-				data := []string{
-					"0",
-					t.owner,
-					t.name,
-					getIssue.Title,
-					getIssue.Status,
-					getIssue.LastAction,
-					humanize.Time(getIssue.LastUpdated),
-					targetUrl,
-				}
-
-				lib.Print([][]string{data})
+				db.AddIssue(issue)
 			} else {
 				t, err := extract(prs, targetUrl)
 				if err != nil {
@@ -58,7 +45,7 @@ var (
 				if err != nil {
 					return err
 				}
-				spew.Dump(pr)
+				db.AddPullRequest(pr)
 			}
 
 			return nil
