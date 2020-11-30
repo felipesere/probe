@@ -43,10 +43,7 @@ var (
 				result, err = lib.GetPr(githubClient, t.owner, t.name, t.nr)
 			}
 
-			result.Link = targetUrl
-			err := db.StoreData(result)
-
-			return err
+			return db.StoreData(result)
 		},
 	}
 )

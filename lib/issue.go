@@ -34,6 +34,7 @@ type ItemQuery struct {
 	LastEditedAt  githubv4.DateTime
 	Comments      CommentsQuery     `graphql:"comments(last: 1)"`
 	TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
+	Url     string
 }
 
 type CommentsQuery struct {
@@ -72,7 +73,7 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (GithubData, er
 		return GithubData{}, err
 	}
 	pr := from(query.Repository.PullRequest)
-	pr.Kind = IssueKind
+	pr.Kind = PullRequestKind
 	pr.Owner = owner
 	pr.Repository = name
 	pr.Number = nr
@@ -111,11 +112,11 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (GithubData,
 
 func from(i ItemQuery) GithubData {
 	return GithubData{
-		Kind:        IssueKind,
 		Status:      fmt.Sprintf("%v", i.State),
 		Id:          fmt.Sprintf("%v", i.Id),
 		LastUpdated: i.TimelineItems.UpdatedAt,
 		LastAction:  i.TimelineItems.Nodes[0].Typename,
 		Title:       i.Title,
+		Link:        i.Url,
 	}
 }
