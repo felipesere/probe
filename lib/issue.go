@@ -15,6 +15,7 @@ const (
 )
 
 type GithubData struct {
+	Key         int // should this be a *int to show that it might not be there?
 	Kind        GithubKind
 	Owner       string
 	Repository  string

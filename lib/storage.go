@@ -2,14 +2,12 @@ package lib
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/dustin/go-humanize"
 	"io/ioutil"
 	"os"
-	"sort"
 	"time"
 )
 
+// Should I get rid of this and just serialize GithubData?
 type Row struct {
 	GithubID    string
 	Owner       string
@@ -21,6 +19,7 @@ type Row struct {
 	Link        string
 	Kind        string
 	Number      int32
+	Key         int // for storage and lookup
 }
 
 type Inner struct {
@@ -48,12 +47,13 @@ func (s *Storage) Delete(id int) {
 	delete(s.inner.Content, id)
 }
 
-func (s *Storage) Update(id int, issue GithubData)  {
-	s.inner.Content[id] = newItem(issue)
+func (s *Storage) Update(id int, issue GithubData) {
+	s.inner.Content[id] = newItem(id, issue)
 }
 
-func newItem(issue GithubData) Row {
-	return Row {
+func newItem(id int, issue GithubData) Row {
+	return Row{
+		Key:         id,
 		GithubID:    issue.Id,
 		Owner:       issue.Owner,
 		Repository:  issue.Repository,
@@ -69,7 +69,7 @@ func newItem(issue GithubData) Row {
 
 func (s *Storage) StoreData(issue GithubData) error {
 	s.withId(func(id int) {
-		s.inner.Content[id] = newItem(issue)
+		s.inner.Content[id] = newItem(id, issue)
 	})
 
 	return nil
@@ -84,7 +84,8 @@ func (s *Storage) withId(f func(id int)) {
 func (s *Storage) LoadData() map[int]GithubData {
 	data := make(map[int]GithubData, 0)
 	for id, row := range s.inner.Content {
-		 data[id] = GithubData{
+		data[id] = GithubData{
+			Key:         id,
 			Kind:        GithubKind(row.Kind),
 			Owner:       row.Owner,
 			Repository:  row.Repository,
@@ -117,34 +118,6 @@ func (s *Storage) innerLoad() {
 	if err != nil {
 		panic(err.Error())
 	}
-}
-
-func (s *Storage) Load() [][]string {
-	s.innerLoad() // Is this OK? Keep on reloading? Well, we are not interactive... so shrug?
-
-	var keys []int
-	for key, _ := range s.inner.Content {
-		keys = append(keys, key)
-	}
-	sort.Ints(keys)
-
-	var data [][]string
-	for _, k := range keys {
-		row := s.inner.Content[k]
-		t, _ := time.Parse(time.RFC3339, row.LastChanged)
-		data = append(data, []string{
-			fmt.Sprintf("%d", k),
-			row.Owner,
-			row.Repository,
-			row.Title,
-			row.Status,
-			row.LastAction,
-			humanize.Time(t),
-			row.Link,
-		})
-	}
-
-	return data
 }
 
 func (s Storage) Flush() {
