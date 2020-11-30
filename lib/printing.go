@@ -15,8 +15,6 @@ func Print(data map[int]GithubData, ordering func(map[int]GithubData) []int)  {
 		row := data[k]
 		toPrint = append(toPrint, []string{
 			fmt.Sprintf("%d", k),
-			row.Owner,
-			row.Repository,
 			row.Title,
 			row.Status,
 			row.LastAction,
@@ -26,7 +24,7 @@ func Print(data map[int]GithubData, ordering func(map[int]GithubData) []int)  {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"idx", "Owner", "Repository", "Title", "Status", "Last action", "Last changed", "Link"})
+	table.SetHeader([]string{"idx", "Title", "Status", "Last action", "Last changed", "Link"})
 	table.SetAutoWrapText(false)
 	table.SetAutoFormatHeaders(true)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
