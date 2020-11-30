@@ -6,7 +6,6 @@ import (
 	"github.com/felipesere/probe/lib"
 	"github.com/spf13/cobra"
 	"sort"
-	"time"
 )
 
 var (
@@ -38,58 +37,36 @@ var (
 )
 
 func byKey(data map[int]lib.GithubData) []int {
-	var keys []int
-	for _, item := range data {
-		keys = append(keys, item.Key)
-	}
-	sort.Ints(keys)
-	return keys
+	return sortBy(data, func(left, right lib.GithubData) bool {
+		return left.Key < right.Key
+	})
 }
 
 func byLastUpdate(data map[int]lib.GithubData) []int {
-	type byLastChange struct {
-		id          int
-		lastChanged time.Time
-	}
-
-	var toBeSorted []byLastChange
-	for _, item := range data {
-		toBeSorted = append(toBeSorted, byLastChange{
-			id:          item.Key,
-			lastChanged: item.LastUpdated,
-		})
-	}
-	sort.Sort(slice.SortInterface(toBeSorted[:], func(i, j int) bool {
-		return toBeSorted[i].lastChanged.After(toBeSorted[j].lastChanged)
-	}))
-
-	var keys []int
-	for _, x := range toBeSorted {
-		keys = append(keys, x.id)
-	}
-	return keys
+	return sortBy(data, func(left, right lib.GithubData) bool {
+		return left.LastUpdated.After(right.LastUpdated)
+	})
 }
 
 func byStatus(data map[int]lib.GithubData) []int {
-	type sortByStatus struct {
-		id     int
-		status string
+	return sortBy(data, func(left, right lib.GithubData) bool {
+		return left.Status < right.Status
+	})
+}
+
+func sortBy(data map[int]lib.GithubData, compare func(left, right lib.GithubData) bool) []int {
+	var toBeSorted []lib.GithubData
+	for _, item := range data {
+		toBeSorted = append(toBeSorted, item)
 	}
 
-	var toBeSorted []sortByStatus
-	for _, item := range data {
-		toBeSorted = append(toBeSorted, sortByStatus{
-			id:     item.Key,
-			status: item.Status,
-		})
-	}
 	sort.Sort(slice.SortInterface(toBeSorted[:], func(i, j int) bool {
-		return toBeSorted[i].status < toBeSorted[j].status
+		return compare(toBeSorted[i], toBeSorted[j])
 	}))
 
 	var keys []int
 	for _, x := range toBeSorted {
-		keys = append(keys, x.id)
+		keys = append(keys, x.Key)
 	}
 	return keys
 }
