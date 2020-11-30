@@ -7,24 +7,9 @@ import (
 	"time"
 )
 
-// Should I get rid of this and just serialize GithubData?
-type Row struct {
-	GithubID    string
-	Owner       string
-	Repository  string
-	Title       string
-	Status      string
-	LastAction  string
-	LastChanged string
-	Link        string
-	Kind        string
-	Number      int32
-	Key         int // for storage and lookup
-}
-
 type Inner struct {
 	Counter int
-	Content map[int]Row
+	Content map[int]GithubData
 }
 
 type Storage struct {
@@ -37,7 +22,7 @@ func NewStorage(path string) (*Storage, error) {
 	s := Storage{path: path}
 	err := json.Unmarshal(b, &s.inner)
 	if err != nil {
-		s.inner.Content = map[int]Row{}
+		s.inner.Content = map[int]GithubData{}
 	}
 
 	return &s, nil
@@ -48,28 +33,14 @@ func (s *Storage) Delete(id int) {
 }
 
 func (s *Storage) Update(id int, issue GithubData) {
-	s.inner.Content[id] = newItem(id, issue)
-}
-
-func newItem(id int, issue GithubData) Row {
-	return Row{
-		Key:         id,
-		GithubID:    issue.Id,
-		Owner:       issue.Owner,
-		Repository:  issue.Repository,
-		Number:      issue.Number,
-		Title:       issue.Title,
-		Status:      issue.Status,
-		LastAction:  issue.LastAction,
-		LastChanged: issue.LastUpdated.Format(time.RFC3339),
-		Link:        issue.Link,
-		Kind:        string(issue.Kind),
-	}
+	issue.Key  = id
+	s.inner.Content[id] = issue
 }
 
 func (s *Storage) StoreData(issue GithubData) error {
 	s.withId(func(id int) {
-		s.inner.Content[id] = newItem(id, issue)
+		issue.Key = id
+		s.inner.Content[id] = issue
 	})
 
 	return nil
@@ -82,24 +53,7 @@ func (s *Storage) withId(f func(id int)) {
 }
 
 func (s *Storage) LoadData() map[int]GithubData {
-	data := make(map[int]GithubData, 0)
-	for id, row := range s.inner.Content {
-		data[id] = GithubData{
-			Key:         id,
-			Kind:        GithubKind(row.Kind),
-			Owner:       row.Owner,
-			Repository:  row.Repository,
-			Number:      row.Number,
-			Link:        row.Link,
-			Title:       row.Title,
-			Status:      row.Status,
-			Id:          row.GithubID,
-			LastUpdated: mustParse(time.RFC3339, row.LastChanged),
-			LastAction:  row.LastAction,
-		}
-	}
-
-	return data
+	return s.inner.Content
 }
 
 func mustParse(layout, t string) time.Time {
