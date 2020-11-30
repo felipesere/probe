@@ -56,7 +56,14 @@ type TimelineItem struct {
 	Typename string `graphql:"__typename"`
 }
 
-func GetPr(client githubv4.Client, owner, name string, nr int32) (GithubData, error) {
+// find a better name
+type Target struct {
+	owner string
+	name  string
+	nr    int32
+}
+
+func GetPr(client githubv4.Client, target Target) (GithubData, error) {
 	var query struct {
 		Repository struct {
 			PullRequest ItemQuery `graphql:"pullRequest(number: $nr)"`
@@ -65,9 +72,9 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (GithubData, er
 
 	err := client.Query(context.TODO(), &query,
 		map[string]interface{}{
-			"owner": githubv4.String(owner),
-			"name":  githubv4.String(name),
-			"nr":    githubv4.Int(nr),
+			"owner": githubv4.String(target.owner),
+			"name":  githubv4.String(target.name),
+			"nr":    githubv4.Int(target.nr),
 		})
 
 	if err != nil {
@@ -75,14 +82,14 @@ func GetPr(client githubv4.Client, owner, name string, nr int32) (GithubData, er
 	}
 	pr := from(query.Repository.PullRequest)
 	pr.Kind = PullRequestKind
-	pr.Owner = owner
-	pr.Repository = name
-	pr.Number = nr
+	pr.Owner = target.owner
+	pr.Repository = target.name
+	pr.Number = target.nr
 
 	return pr, nil
 }
 
-func GetIssue(client githubv4.Client, owner, name string, nr int32) (GithubData, error) {
+func GetIssue(client githubv4.Client, target Target) (GithubData, error) {
 	var query struct {
 		Repository struct {
 			Issue ItemQuery `graphql:"issue(number: $nr)"`
@@ -91,9 +98,9 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (GithubData,
 
 	err := client.Query(context.TODO(), &query,
 		map[string]interface{}{
-			"owner": githubv4.String(owner),
-			"name":  githubv4.String(name),
-			"nr":    githubv4.Int(nr),
+			"owner": githubv4.String(target.owner),
+			"name":  githubv4.String(target.name),
+			"nr":    githubv4.Int(target.nr),
 		})
 
 	if err != nil {
@@ -104,9 +111,9 @@ func GetIssue(client githubv4.Client, owner, name string, nr int32) (GithubData,
 
 	issue := from(i)
 	issue.Kind = IssueKind
-	issue.Owner = owner
-	issue.Repository = name
-	issue.Number = nr
+	issue.Owner = target.owner
+	issue.Repository = target.name
+	issue.Number = target.nr
 
 	return issue, nil
 }

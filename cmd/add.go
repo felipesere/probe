@@ -26,21 +26,21 @@ var (
 
 			var result lib.GithubData
 			if isIssue {
-				t, err := extract(issues, targetUrl)
+				target, err := extract(issues, targetUrl)
 				if err != nil {
 					return err
 				}
-				result, err = lib.GetIssue(githubClient, t.owner, t.name, t.nr)
+				result, err = lib.GetIssue(githubClient, target)
 				if err != nil {
 					return err
 				}
 			} else {
-				t, err := extract(prs, targetUrl)
+				target, err := extract(prs, targetUrl)
 				if err != nil {
 					return err
 				}
 
-				result, err = lib.GetPr(githubClient, t.owner, t.name, t.nr)
+				result, err = lib.GetPr(githubClient, target)
 			}
 
 			return db.StoreData(result)
@@ -48,23 +48,17 @@ var (
 	}
 )
 
-type Target struct {
-	owner string
-	name  string
-	nr    int32
-}
-
-func extract(pattern *regexp.Regexp, url string) (Target, error) {
+func extract(pattern *regexp.Regexp, url string) (lib.Target, error) {
 	if !pattern.MatchString(url) {
-		return Target{}, fmt.Errorf("url did not match expected pattern: %s", url)
+		return lib.Target{}, fmt.Errorf("url did not match expected pattern: %s", url)
 	}
 	subMatch := pattern.FindStringSubmatch(url)
 	nr, err := strconv.ParseInt(subMatch[3], 10, 63)
 	if err != nil {
-		return Target{}, fmt.Errorf("could not extract number component of URL: %s", err.Error())
+		return lib.Target{}, fmt.Errorf("could not extract number component of URL: %s", err.Error())
 	}
 
-	return Target{owner: subMatch[1], name: subMatch[2], nr: int32(nr)}, nil
+	return lib.Target{owner: subMatch[1], name: subMatch[2], nr: int32(nr)}, nil
 }
 
 func init() {
