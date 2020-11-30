@@ -15,8 +15,6 @@ type Retrieval struct {
 }
 
 var (
-	isIssue bool
-
 	config = []Retrieval{
 		{
 			"https://github.com/([^/]+)/([^/]+)/issues/(.+)",
@@ -46,7 +44,8 @@ var (
 				if err != nil {
 					return err
 				}
-				return db.StoreData(result)
+				db.StoreData(result)
+				return nil
 			}
 
 			return fmt.Errorf("did not figure out what to do with %s", targetUrl)
@@ -54,12 +53,12 @@ var (
 	}
 )
 
-func extract(pattern string, url string) (lib.Target, bool, error) {
-	p := regexp.MustCompile(pattern)
-	if !p.MatchString(url) {
+func extract(p string, url string) (lib.Target, bool, error) {
+	pattern := regexp.MustCompile(p)
+	if !pattern.MatchString(url) {
 		return lib.Target{}, false, nil
 	}
-	subMatch := p.FindStringSubmatch(url)
+	subMatch := pattern.FindStringSubmatch(url)
 	nr, err := strconv.ParseInt(subMatch[3], 10, 63)
 	if err != nil {
 		return lib.Target{}, false, fmt.Errorf("could not extract number component of URL: %s", err.Error())

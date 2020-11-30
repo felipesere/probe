@@ -32,23 +32,16 @@ func (s *Storage) Delete(id int) {
 	delete(s.inner.Content, id)
 }
 
-func (s *Storage) Update(id int, issue GithubData) {
-	issue.Key  = id
-	s.inner.Content[id] = issue
+func (s *Storage) Update(id int, data GithubData) {
+	data.Key = id
+	s.inner.Content[id] = data
 }
 
-func (s *Storage) StoreData(issue GithubData) error {
-	s.withId(func(id int) {
-		issue.Key = id
-		s.inner.Content[id] = issue
-	})
-
-	return nil
-}
-
-func (s *Storage) withId(f func(id int)) {
+func (s *Storage) StoreData(data GithubData) {
 	nextId := s.inner.Counter + 1
-	f(nextId)
+	data.Key = nextId
+	s.inner.Content[nextId] = data
+
 	s.inner.Counter = nextId
 }
 
