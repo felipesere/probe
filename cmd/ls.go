@@ -8,6 +8,11 @@ import (
 	"sort"
 )
 
+func init() {
+	lsCmd.Flags().StringVar(&sortingBy, "sort-by", "key", "choose from 'key', 'changed', or 'status' to sort the table")
+	rootCmd.AddCommand(lsCmd)
+}
+
 var (
 	sortingBy string
 
@@ -69,9 +74,4 @@ func sortBy(data map[int]lib.GithubData, compare func(left, right lib.GithubData
 		keys = append(keys, x.Key)
 	}
 	return keys
-}
-
-func init() {
-	lsCmd.Flags().StringVar(&sortingBy, "sort-by", "key", "choose from 'key', 'changed', or 'status' to sort the table")
-	rootCmd.AddCommand(lsCmd)
 }
