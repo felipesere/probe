@@ -58,9 +58,9 @@ type TimelineItem struct {
 
 // find a better name
 type Target struct {
-	owner string
-	name  string
-	nr    int32
+	Owner string
+	Name  string
+	Nr    int32
 }
 
 func GetPr(client githubv4.Client, target Target) (GithubData, error) {
@@ -72,9 +72,9 @@ func GetPr(client githubv4.Client, target Target) (GithubData, error) {
 
 	err := client.Query(context.TODO(), &query,
 		map[string]interface{}{
-			"owner": githubv4.String(target.owner),
-			"name":  githubv4.String(target.name),
-			"nr":    githubv4.Int(target.nr),
+			"owner": githubv4.String(target.Owner),
+			"name":  githubv4.String(target.Name),
+			"nr":    githubv4.Int(target.Nr),
 		})
 
 	if err != nil {
@@ -82,9 +82,9 @@ func GetPr(client githubv4.Client, target Target) (GithubData, error) {
 	}
 	pr := from(query.Repository.PullRequest)
 	pr.Kind = PullRequestKind
-	pr.Owner = target.owner
-	pr.Repository = target.name
-	pr.Number = target.nr
+	pr.Owner = target.Owner
+	pr.Repository = target.Name
+	pr.Number = target.Nr
 
 	return pr, nil
 }
@@ -98,9 +98,9 @@ func GetIssue(client githubv4.Client, target Target) (GithubData, error) {
 
 	err := client.Query(context.TODO(), &query,
 		map[string]interface{}{
-			"owner": githubv4.String(target.owner),
-			"name":  githubv4.String(target.name),
-			"nr":    githubv4.Int(target.nr),
+			"owner": githubv4.String(target.Owner),
+			"name":  githubv4.String(target.Name),
+			"nr":    githubv4.Int(target.Nr),
 		})
 
 	if err != nil {
@@ -111,9 +111,9 @@ func GetIssue(client githubv4.Client, target Target) (GithubData, error) {
 
 	issue := from(i)
 	issue.Kind = IssueKind
-	issue.Owner = target.owner
-	issue.Repository = target.name
-	issue.Number = target.nr
+	issue.Owner = target.Owner
+	issue.Repository = target.Name
+	issue.Number = target.Nr
 
 	return issue, nil
 }

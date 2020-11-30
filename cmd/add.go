@@ -3,65 +3,71 @@ package cmd
 import (
 	"fmt"
 	"github.com/felipesere/probe/lib"
+	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"regexp"
 	"strconv"
 )
 
-const issuePattern = "https://github.com/([^/]+)/([^/]+)/issues/(.+)"
-const prPattern = "https://github.com/([^/]+)/([^/]+)/pull/(.+)"
+type Retrieval struct {
+	ExtractionPattern string
+	Getter            func(client githubv4.Client, target lib.Target) (lib.GithubData, error)
+}
 
 var (
 	isIssue bool
 
-	issues = regexp.MustCompile(issuePattern)
-	prs    = regexp.MustCompile(prPattern)
+	config = []Retrieval{
+		{
+			"https://github.com/([^/]+)/([^/]+)/issues/(.+)",
+			lib.GetIssue,
+		},
+		{
+			"https://github.com/([^/]+)/([^/]+)/pull/(.+)",
+			lib.GetPr,
+		},
+	}
 
 	addCmd = &cobra.Command{
 		Use:   "add",
-		Args:  cobra.ExactArgs(1),
 		Short: "adds a new MR based on the URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetUrl := args[0]
 
-			var result lib.GithubData
-			if isIssue {
-				target, err := extract(issues, targetUrl)
+			for _, option := range config {
+				target, matched, err := extract(option.ExtractionPattern, targetUrl)
 				if err != nil {
 					return err
 				}
-				result, err = lib.GetIssue(githubClient, target)
+				if !matched {
+					continue
+				}
+				result, err := option.Getter(githubClient, target)
 				if err != nil {
 					return err
 				}
-			} else {
-				target, err := extract(prs, targetUrl)
-				if err != nil {
-					return err
-				}
-
-				result, err = lib.GetPr(githubClient, target)
+				return db.StoreData(result)
 			}
 
-			return db.StoreData(result)
+			return fmt.Errorf("did not figure out what to do with %s", targetUrl)
 		},
 	}
 )
 
-func extract(pattern *regexp.Regexp, url string) (lib.Target, error) {
-	if !pattern.MatchString(url) {
-		return lib.Target{}, fmt.Errorf("url did not match expected pattern: %s", url)
+func extract(pattern string, url string) (lib.Target, bool, error) {
+	p := regexp.MustCompile(pattern)
+	if !p.MatchString(url) {
+		return lib.Target{}, false, nil
 	}
-	subMatch := pattern.FindStringSubmatch(url)
+	subMatch := p.FindStringSubmatch(url)
 	nr, err := strconv.ParseInt(subMatch[3], 10, 63)
 	if err != nil {
-		return lib.Target{}, fmt.Errorf("could not extract number component of URL: %s", err.Error())
+		return lib.Target{}, false, fmt.Errorf("could not extract number component of URL: %s", err.Error())
 	}
 
-	return lib.Target{owner: subMatch[1], name: subMatch[2], nr: int32(nr)}, nil
+	return lib.Target{Owner: subMatch[1], Name: subMatch[2], Nr: int32(nr)}, true, nil
 }
 
 func init() {
-	addCmd.Flags().BoolVarP(&isIssue, "issue", "", false, "add an issue instead of an PR")
 	rootCmd.AddCommand(addCmd)
 }
