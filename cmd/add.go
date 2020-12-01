@@ -10,8 +10,8 @@ import (
 )
 
 type Retrieval struct {
-	ExtractionPattern string
-	Getter            func(client githubv4.Client, target lib.Target) (lib.GithubData, error)
+	Pattern string
+	Getter  func(client githubv4.Client, target lib.Target) (lib.GithubData, error)
 }
 
 var (
@@ -33,7 +33,7 @@ var (
 			targetUrl := args[0]
 
 			for _, option := range config {
-				target, matched, err := extract(option.ExtractionPattern, targetUrl)
+				target, matched, err := extract(option.Pattern, targetUrl)
 				if err != nil {
 					return err
 				}
