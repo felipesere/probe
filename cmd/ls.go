@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/bradfitz/slice"
 	"github.com/felipesere/probe/lib"
 	"github.com/spf13/cobra"
 	"sort"
@@ -17,9 +16,16 @@ var (
 	sortingBy string
 
 	lsCmd = &cobra.Command{
-		Use:   "ls",
-		Short: "list c",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "show update to date status of the tracked items",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			updates, err := updateAll()
+
+			if err != nil {
+				return err
+			}
+
 			items := db.LoadData()
 			var sortingFunc func(map[int]lib.GithubData) []int
 
@@ -34,7 +40,7 @@ var (
 				return fmt.Errorf("unknown sorting function: %s", sortingBy)
 			}
 
-			lib.Print(items, sortingFunc)
+			lib.Print(items, updates, sortingFunc)
 
 			return nil
 		},
@@ -65,13 +71,38 @@ func sortBy(data map[int]lib.GithubData, compare func(left, right lib.GithubData
 		toBeSorted = append(toBeSorted, item)
 	}
 
-	sort.Sort(slice.SortInterface(toBeSorted[:], func(i, j int) bool {
+	sort.Slice(toBeSorted, func(i, j int) bool {
 		return compare(toBeSorted[i], toBeSorted[j])
-	}))
+	})
 
 	var keys []int
 	for _, x := range toBeSorted {
 		keys = append(keys, x.Key)
 	}
 	return keys
+}
+
+func updateAll() ([]string, error) {
+	var updates []string
+	for id, gh := range db.LoadData() {
+		var newItem lib.GithubData
+		var err error
+		target := lib.Target{Owner: gh.Owner, Name: gh.Repository, Nr: gh.Number}
+		switch gh.Kind {
+		case lib.IssueKind:
+			newItem, err = lib.GetIssue(githubClient, target)
+
+		case lib.PullRequestKind:
+			newItem, err = lib.GetPr(githubClient, target)
+		}
+
+		if gh.Changed(newItem) {
+			updates = append(updates, gh.ID)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("unable to update entry: %s", err.Error())
+		}
+		db.Update(id, newItem)
+	}
+	return updates, nil
 }

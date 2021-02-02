@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -28,8 +27,7 @@ var (
 				defer db.Close()
 			}
 
-			return errors.New("foo bar!")
+			return nil
 		},
 	}
 )
-

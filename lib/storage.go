@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"time"
 )
 
 type Inner struct {
@@ -38,36 +37,18 @@ func (s *Storage) Update(id int, data GithubData) {
 }
 
 func (s *Storage) StoreData(data GithubData) {
-	nextId := s.inner.Counter + 1
-	data.Key = nextId
-	s.inner.Content[nextId] = data
+	nextID := s.inner.Counter + 1
+	data.Key = nextID
+	s.inner.Content[nextID] = data
 
-	s.inner.Counter = nextId
+	s.inner.Counter = nextID
 }
 
 func (s *Storage) LoadData() map[int]GithubData {
 	return s.inner.Content
 }
 
-func mustParse(layout, t string) time.Time {
-	res, err := time.Parse(layout, t)
-	if err != nil {
-		panic(err)
-	}
-
-	return res
-}
-
-func (s *Storage) innerLoad() {
-	file, _ := os.OpenFile(s.path, os.O_RDONLY, os.ModePerm)
-
-	err := json.NewDecoder(file).Decode(&s.inner)
-	if err != nil {
-		panic(err.Error())
-	}
-}
-
 func (s Storage) Flush() {
 	b, _ := json.MarshalIndent(s.inner, "", "  ")
-	ioutil.WriteFile(s.path, b, os.ModePerm)
+	_ = ioutil.WriteFile(s.path, b, os.ModePerm)
 }

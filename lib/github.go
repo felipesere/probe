@@ -23,19 +23,23 @@ type GithubData struct {
 	Link        string
 	Title       string
 	Status      string
-	Id          string
+	ID          string
 	LastUpdated time.Time
 	LastAction  string
 }
 
+func (gh GithubData) Changed(other GithubData) bool {
+	return gh.Status != other.Status || gh.LastUpdated != other.LastUpdated || gh.LastAction != other.LastAction
+}
+
 type ItemQuery struct {
-	Id            githubv4.ID
+	ID            githubv4.ID
 	Title         string
 	State         githubv4.PullRequestState
 	LastEditedAt  githubv4.DateTime
 	Comments      CommentsQuery     `graphql:"comments(last: 1)"`
 	TimelineItems TimelineItemQuery `graphql:"timelineItems(last: 1)"`
-	Url     string
+	URL           string
 }
 
 type CommentsQuery struct {
@@ -121,10 +125,10 @@ func GetIssue(client githubv4.Client, target Target) (GithubData, error) {
 func from(i ItemQuery) GithubData {
 	return GithubData{
 		Status:      fmt.Sprintf("%v", i.State),
-		Id:          fmt.Sprintf("%v", i.Id),
+		ID:          fmt.Sprintf("%v", i.ID),
 		LastUpdated: i.TimelineItems.UpdatedAt,
 		LastAction:  i.TimelineItems.Nodes[0].Typename,
 		Title:       i.Title,
-		Link:        i.Url,
+		Link:        i.URL,
 	}
 }

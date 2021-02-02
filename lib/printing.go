@@ -3,19 +3,26 @@ package lib
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"github.com/kyokomi/emoji/v2"
 	"github.com/olekukonko/tablewriter"
 	"os"
 )
 
-func Print(data map[int]GithubData, ordering func(map[int]GithubData) []int)  {
+func Print(data map[int]GithubData, updates []string, ordering func(map[int]GithubData) []int) {
 	order := ordering(data)
 
 	var toPrint [][]string
 	for _, k := range order {
 		row := data[k]
+		var title string
+		if Contains(row.ID, updates) {
+			title = emoji.Sprintf(":bulb: %s", row.Title)
+		} else {
+			title = row.Title
+		}
 		toPrint = append(toPrint, []string{
 			fmt.Sprintf("%d", k),
-			row.Title,
+			title,
 			row.Status,
 			row.LastAction,
 			humanize.Time(row.LastUpdated),
@@ -40,3 +47,12 @@ func Print(data map[int]GithubData, ordering func(map[int]GithubData) []int)  {
 	table.Render()
 }
 
+func Contains(val string, collection []string) bool {
+	for _, x := range collection {
+		if x == val {
+			return true
+		}
+	}
+
+	return false
+}

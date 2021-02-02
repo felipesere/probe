@@ -20,12 +20,11 @@ func main() {
 	}
 	viper.SetEnvPrefix("")
 	viper.AutomaticEnv()
+
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			fmt.Fprintln(os.Stderr, "Config file was not found")
+			_, _ = fmt.Fprintln(os.Stderr, "Config file was not found")
 			os.Exit(1)
-		} else {
-			// Config file was found but another error was produced
 		}
 	}
 
@@ -35,7 +34,7 @@ func main() {
 
 	db, err := lib.NewStorage(viper.GetString("database_path"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not load DB: %s\n", err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, "Could not load DB: %s\n", err.Error())
 		os.Exit(1)
 	}
 	cmd.Execute(client, db)

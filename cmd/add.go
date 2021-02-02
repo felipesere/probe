@@ -30,10 +30,10 @@ var (
 		Use:   "add",
 		Short: "adds a new MR based on the URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			targetUrl := args[0]
+			targetURL := args[0]
 
 			for _, option := range config {
-				target, matched, err := extract(option.Pattern, targetUrl)
+				target, matched, err := extract(option.Pattern, targetURL)
 				if err != nil {
 					return err
 				}
@@ -48,7 +48,7 @@ var (
 				return nil
 			}
 
-			return fmt.Errorf("did not figure out what to do with %s", targetUrl)
+			return fmt.Errorf("did not figure out what to do with %s", targetURL)
 		},
 	}
 )
