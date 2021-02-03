@@ -83,26 +83,46 @@ func sortBy(data map[int]lib.GithubData, compare func(left, right lib.GithubData
 }
 
 func updateAll() ([]string, error) {
+	currentItems := db.LoadData()
+
+	N := len(currentItems)
+	semaphore := make(chan bool, N)
+
 	var updates []string
-	for id, gh := range db.LoadData() {
-		var newItem lib.GithubData
-		var err error
-		target := lib.Target{Owner: gh.Owner, Name: gh.Repository, Nr: gh.Number}
-		switch gh.Kind {
-		case lib.IssueKind:
-			newItem, err = lib.GetIssue(githubClient, target)
-
-		case lib.PullRequestKind:
-			newItem, err = lib.GetPr(githubClient, target)
-		}
-
-		if gh.Changed(newItem) {
-			updates = append(updates, gh.ID)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("unable to update entry: %s", err.Error())
-		}
-		db.Update(id, newItem)
+	for id, gh := range currentItems {
+		go func(i int, g lib.GithubData) {
+			newItem, updated, err := getNewItem(g)
+			if err != nil {
+				panic(err)
+			}
+			if updated {
+				updates = append(updates, g.ID)
+				db.Update(i, newItem)
+			}
+			semaphore <- true
+		}(id, gh)
+	}
+	for i := 0; i < N; i++ {
+		<-semaphore
 	}
 	return updates, nil
+}
+
+func getNewItem(item lib.GithubData) (lib.GithubData, bool, error) {
+	var newItem lib.GithubData
+	var err error
+	target := lib.Target{Owner: item.Owner, Name: item.Repository, Nr: item.Number}
+	switch item.Kind {
+	case lib.IssueKind:
+		newItem, err = lib.GetIssue(githubClient, target)
+
+	case lib.PullRequestKind:
+		newItem, err = lib.GetPr(githubClient, target)
+	}
+
+	if err != nil {
+		return newItem, false, fmt.Errorf("unable to update entry: %s", err.Error())
+	}
+
+	return newItem, item.Changed(newItem), nil
 }

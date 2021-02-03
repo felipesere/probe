@@ -15,7 +15,7 @@ func Print(data map[int]GithubData, updates []string, ordering func(map[int]Gith
 	for _, k := range order {
 		row := data[k]
 		var title string
-		if Contains(row.ID, updates) {
+		if contains(row.ID, updates) {
 			title = emoji.Sprintf(":bulb: %s", row.Title)
 		} else {
 			title = row.Title
@@ -47,7 +47,7 @@ func Print(data map[int]GithubData, updates []string, ordering func(map[int]Gith
 	table.Render()
 }
 
-func Contains(val string, collection []string) bool {
+func contains(val string, collection []string) bool {
 	for _, x := range collection {
 		if x == val {
 			return true
